@@ -1,3 +1,5 @@
+import sys
+from random import randrange
 """
 * Copyright (C) 2016 josec
  *
@@ -18,31 +20,56 @@
 """
     Generate a polynomial that generate an amount of primes.
 """
+
 DEBUG = True
 
+current_num = 3
 
-def generate_primes(num):
+def get_next_prime():
+    global current_num
+    current_num = current_num + 2
+    while not is_prime(current_num):
+        current_num = current_num + 2
+    return current_num
+    
+
+small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31] # etc.
+def is_prime(n):
+    """Return True if n passes k rounds of the Miller-Rabin primality
+    test (and is probably prime). Return False if n is proved to be
+    composite.
+
     """
-        Generate a list of prime number less than num.
-    """
-    plist = []
-    pdict = set()
+    k = 5
+    if n < 2: return False
+    for p in small_primes:
+        if n < p * p: return True
+        if n % p == 0: return False
+    r, s = 0, n - 1
+    while s % 2 == 0:
+        r += 1
+        s //= 2
+    for _ in range(k):
+        a = randrange(2, n - 1)
+        x = pow(a, s, n)
+        if x == 1 or x == n - 1:
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
 
-    for i in range(2, num + 1):
-        if i not in pdict:
-            plist.append(i)
-            pdict.update(range(i * i, num + 1, i))
 
-    return plist
-
-
-def find_polynomial(degree, maxprime, interestingafter):
+def find_polynomial(degree, interestingafter, filename):
     """
         Find a polynomial of degree that generate at least interestingAfter from 2 to maxPrime.
     """
-    plist = generate_primes(maxprime)
-    solution = []
-    for coef in plist:
+    f = open(filename, "w")
+    while 1 == 1:
+        coef = get_next_prime()
         coef_list = []
         coef_list.append(coef)
 
@@ -58,17 +85,25 @@ def find_polynomial(degree, maxprime, interestingafter):
                     evaluate = 0
                     for j in range(0, degree + 1):
                         evaluate = evaluate + coef_list[j] * k ** j
-                    if evaluate in plist:
+                    if is_prime(evaluate):
                         primes = primes + 1
                     else:
                         break
 
                 if primes > interestingafter:
+
                     if DEBUG:
                         print 'N:', primes, ' coefs:', coef_list
-                    solution.append('N:' +  str(primes) + ' coefs:' + str(coef_list))
+                    f.write('N:' +  str(primes) + ' coefs:' +  str(coef_list) + "\n")
+                    f.flush()
 
-    return solution
+if __name__ == "__main__":
+    if sys.argv.count < 4:
+        print "Invalid arguments"
+        exit(-1)
 
+    degree = int(sys.argv[1])
+    logafter = int(sys.argv[2])
+    filename = sys.argv[3]
 
-print find_polynomial(2, 1000, 10)
+    find_polynomial(degree, logafter, filename)
