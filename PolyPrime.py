@@ -1,4 +1,4 @@
-import sys
+import os
 from random import randrange
 """
 * Copyright (C) 2016 josec
@@ -63,13 +63,26 @@ def is_prime(n):
     return True
 
 
-def find_polynomial(degree, interestingafter, filename):
+def find_polynomial(degree, interestingafter):
     """
         Find a polynomial of degree that generate at least interestingAfter from 2 to maxPrime.
     """
-    f = open(filename, "w")
+    cache_filename = "results/last_test_number_pol{}_after{}".format(degree, interestingafter)
+    ia_filename = "results/polynomial_list_{}_{}".format(degree, interestingafter)
+
+    if os.path.exists(cache_filename):
+        cache_coef = open(cache_filename, "r")
+        current_num = int(cache_coef.read())
+        cache_coef.close()
+    
+    file_ia = open(ia_filename, "w+")
+
     while 1 == 1:
         coef = get_next_prime()
+        cache_coef = open(cache_filename, "w")
+        cache_coef.write(str(coef))
+        cache_coef.close()
+
         coef_list = []
         coef_list.append(coef)
 
@@ -91,19 +104,18 @@ def find_polynomial(degree, interestingafter, filename):
                         break
 
                 if primes > interestingafter:
+                    polynomial_form = "p(x)="
 
-                    if DEBUG:
-                        print 'N:', primes, ' coefs:', coef_list
-                    f.write('N:' +  str(primes) + ' coefs:' +  str(coef_list) + "\n")
-                    f.flush()
+                    for i in range(0, degree+1):
+                        if i > 0:
+                            polynomial_form = polynomial_form + "+"
+                            polynomial_form = polynomial_form + str(coef_list[i]) + "x^{}".format(i)
+                        else:
+                            polynomial_form = polynomial_form + str(coef_list[i])
+                    
+                    file_ia.write(str(primes) + "|" + polynomial_form + "\n")
+                    file_ia.flush()
 
-if __name__ == "__main__":
-    if sys.argv.count < 4:
-        print "Invalid arguments"
-        exit(-1)
 
-    degree = int(sys.argv[1])
-    logafter = int(sys.argv[2])
-    filename = sys.argv[3]
 
-    find_polynomial(degree, logafter, filename)
+find_polynomial(1, 8)
