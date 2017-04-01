@@ -1,5 +1,7 @@
 import os
 from random import randrange
+from fractions import gcd
+
 """
 * Copyright (C) 2016 josec
  *
@@ -23,99 +25,125 @@ from random import randrange
 
 DEBUG = True
 
-current_num = 3
+class PolyPrime:
+    def __init__(self, degree, m):
+        # Degree of the polynomial.
+        self.degree = degree
 
-def get_next_prime():
-    global current_num
-    current_num = current_num + 2
-    while not is_prime(current_num):
-        current_num = current_num + 2
-    return current_num
+        # Report if generate at least m primes.
+        self.m = m
+
+        # Cache filename
+        self.cache_filename = "results/cache-{}-{}".format(self.degree, self.m)
+
+        # Output filename
+        self.output_filename = "results/output-{}-{}".format(self.degree, self.m)
+        
+        # Read from cache
+        self.readFromCache()
+        
+    def readFromCache(self):
+        self.n = 3
+        
+        if os.path.exists(self.cache_filename):
+            cache_coef = open(self.cache_filename, "r")
+            self.n = int(cache_coef.read())
+            cache_coef.close()
+        
     
+    # Generate the most near prime.
+    def get_next_prime(self):
+        self.n = self.n + 2
+        while not self.is_prime(self.n):
+            self.n = self.n + 2
+        return self.n
 
-small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31] # etc.
-def is_prime(n):
-    """Return True if n passes k rounds of the Miller-Rabin primality
-    test (and is probably prime). Return False if n is proved to be
-    composite.
+    # Check if prime or not
+    def is_prime(self, n):
+        small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31] # etc.    
+        k = 5
+        if n < 2: return False
+        for p in small_primes:
+            if n < p * p: return True
+            if n % p == 0: return False
+        r, s = 0, n - 1
+        while s % 2 == 0:
+            r += 1
+            s //= 2
+        for _ in range(k):
+            a = randrange(2, n - 1)
+            x = pow(a, s, n)
+            if x == 1 or x == n - 1:
+                continue
+            for _ in range(r - 1):
+                x = pow(x, 2, n)
+                if x == n - 1:
+                    break
+            else:
+                return False
 
-    """
-    k = 5
-    if n < 2: return False
-    for p in small_primes:
-        if n < p * p: return True
-        if n % p == 0: return False
-    r, s = 0, n - 1
-    while s % 2 == 0:
-        r += 1
-        s //= 2
-    for _ in range(k):
-        a = randrange(2, n - 1)
-        x = pow(a, s, n)
-        if x == 1 or x == n - 1:
-            continue
-        for _ in range(r - 1):
-            x = pow(x, 2, n)
-            if x == n - 1:
-                break
-        else:
-            return False
-    return True
+        return True
 
+    def updateGitRepo(self, poly):
+        os.system("git add .")
+        os.system("git commit -m \"{}\"".format("Updated with a new polynomial of degree", self.degree, poly))
+        os.system("git push origin master")
+        
+    def findPolynomial(self):
+        io_output = open(self.output_filename, "a")
+        cache_coef = open(self.cache_filename, "w")
 
-def find_polynomial(degree, interestingafter):
-    """
-        Find a polynomial of degree that generate at least interestingAfter from 2 to maxPrime.
-    """
-    cache_filename = "results/last_test_number_pol{}_after{}".format(degree, interestingafter)
-    ia_filename = "results/polynomial_list_{}_{}".format(degree, interestingafter)
+        while 1 == 1:
+            coef = self.get_next_prime()
 
-    if os.path.exists(cache_filename):
-        cache_coef = open(cache_filename, "r")
-        current_num = int(cache_coef.read())
-        cache_coef.close()
-    
-    file_ia = open(ia_filename, "w+")
+            coef_list = []
+            coef_list.append(coef)
+            
+            for i in range(0, self.degree):
+                coef_list.append(0)
 
-    while 1 == 1:
-        coef = get_next_prime()
-        cache_coef = open(cache_filename, "w")
-        cache_coef.write(str(coef))
-        cache_coef.close()
+            for i in range(0, coef_list[0] ** self.degree):
+                for j in range(0, self.degree):
+                    coef_list[j + 1] = i / coef_list[0] ** j % coef_list[0]
 
-        coef_list = []
-        coef_list.append(coef)
+                if coef_list[self.degree] != 0:
+                    primes = 0
 
-        for i in range(0, degree):
-            coef_list.append(0)
-
-        for i in range(0, coef_list[0] ** degree):
-            for j in range(0, degree):
-                coef_list[j + 1] = i / coef_list[0] ** j % coef_list[0]
-            if coef_list[degree] != 0:
-                primes = 0
-                for k in range(0, coef_list[0]):
-                    evaluate = 0
-                    for j in range(0, degree + 1):
-                        evaluate = evaluate + coef_list[j] * k ** j
-                    if is_prime(evaluate):
-                        primes = primes + 1
-                    else:
-                        break
-
-                if primes > interestingafter:
-                    polynomial_form = "p(x)="
-
-                    for i in range(0, degree+1):
-                        if i > 0:
-                            polynomial_form = polynomial_form + "+"
-                            polynomial_form = polynomial_form + str(coef_list[i]) + "x^{}".format(i)
+                    # Definition.
+                    for k in range(0, coef_list[0]):
+                        evaluate = 0
+                        for j in range(0, self.degree + 1):
+                            evaluate = evaluate + coef_list[j] * k ** j
+                        if self.is_prime(evaluate):
+                            primes = primes + 1
                         else:
-                            polynomial_form = polynomial_form + str(coef_list[i])
-                    
-                    file_ia.write(str(primes) + "|" + polynomial_form + "\n")
-                    file_ia.flush()
+                            break
+
+                    if primes > self.m:
+                        polynomial_form = "p(x)="
+                            
+                        for i in range(0, self.degree+1):
+                            if i > 0:
+                                polynomial_form = polynomial_form + "+"
+                                polynomial_form = polynomial_form + str(coef_list[i]) + "x^{}".format(i)
+                            else:
+                                polynomial_form = polynomial_form + str(coef_list[i])
+
+                        if(DEBUG):
+                            print "Saving ", polynomial_form
+                        io_output.write(str(primes) + "|" + polynomial_form + "\n")
+                        io_output.flush()
+                        self.updateGitRepo(polynomial_form)
+
+            cache_coef.seek(0)
+            
+            cache_coef.write(str(coef))
+            cache_coef.flush()
+            
+        cache_coef.close()
+        io_output.close()
+            
 
 
-
-find_polynomial(1, 8)
+pp = PolyPrime(1, 8)
+pp.findPolynomial()
