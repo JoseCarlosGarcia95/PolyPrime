@@ -84,11 +84,6 @@ class PolyPrime:
 
         return True
 
-    def updateGitRepo(self, poly):
-        os.system("git add .")
-        os.system("git commit -m \"{}\"".format("Updated with a new polynomial of degree", self.degree, poly))
-        os.system("git push origin master")
-        
     def findPolynomial(self):
         io_output = open(self.output_filename, "a")
         cache_coef = open(self.cache_filename, "w")
@@ -133,7 +128,6 @@ class PolyPrime:
                             print "Saving ", polynomial_form
                         io_output.write(str(primes) + "|" + polynomial_form + "\n")
                         io_output.flush()
-                        self.updateGitRepo(polynomial_form)
 
             cache_coef.seek(0)
             
